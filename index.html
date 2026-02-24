@@ -9,21 +9,32 @@
         #game-container, #garden-container { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.8s; }
         .hidden { display: none !important; opacity: 0; }
         
-        h1 { font-weight: 300; text-align: center; padding: 20px; color: #ff7eb9; text-shadow: 0 0 10px #ff7eb9; }
-        .btn-group { position: relative; width: 100%; height: 200px; }
-        button { padding: 15px 40px; font-size: 1.2rem; border-radius: 50px; border: none; cursor: pointer; position: absolute; transition: 0.1s; box-shadow: 0 0 15px rgba(255,126,185,0.4); }
-        #yesBtn { background: #ff7eb9; color: white; left: 50%; transform: translateX(-120%); bottom: 50px; }
-        #noBtn { background: #333; color: #aaa; left: 50%; transform: translateX(20%); bottom: 50px; touch-action: none; }
+        h1 { font-weight: 300; text-align: center; padding: 20px; color: #ff7eb9; text-shadow: 0 0 10px #ff7eb9; z-index: 10; }
+        .btn-group { position: relative; width: 100%; height: 300px; display: flex; justify-content: center; align-items: center; }
+        
+        /* Fixed Button Styles - No more stretching */
+        button { width: 100px !important; height: 50px !important; font-size: 1.1rem; border-radius: 25px; border: none; cursor: pointer; position: absolute; transition: transform 0.1s; box-shadow: 0 0 15px rgba(255,126,185,0.4); }
+        #yesBtn { background: #ff7eb9; color: white; left: calc(50% - 110px); }
+        #noBtn { background: #333; color: #aaa; left: calc(50% + 10px); touch-action: none; display: flex; align-items: center; justify-content: center; }
 
-        /* Neon Flower Logic */
-        .flower { position: absolute; pointer-events: none; transform: translate(-50%, -50%); animation: bloom 1.5s ease-out forwards; }
+        /* Flower Garden - Strictly Flowers */
+        .flower { position: absolute; pointer-events: none; transform: translate(-50%, -50%); animation: bloom 1.5s ease-out forwards; z-index: 5; }
         @keyframes bloom {
-            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; filter: brightness(2); }
-            50% { opacity: 1; filter: brightness(1.2) drop-shadow(0 0 10px currentColor); }
-            100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; filter: drop-shadow(0 0 5px currentColor); }
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.3); opacity: 0.7; }
         }
-        .instruction { position: absolute; bottom: 30px; font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase; color: #ff7eb9; animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+        /* 3D Heart Reveal & Message */
+        #final-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 100; width: 100%; }
+        .heart-container { font-size: 100px; line-height: 1; position: relative; display: inline-block; overflow: hidden; height: 0; animation: drawHeart 2s ease-out forwards; text-shadow: 0 0 20px #ff0000; }
+        @keyframes drawHeart {
+            from { height: 0; }
+            to { height: 120px; }
+        }
+        .love-text { opacity: 0; font-size: 1.8rem; color: #ff7eb9; margin-top: 20px; text-shadow: 0 0 10px #ff7eb9; animation: fadeInText 1s ease-out 1.5s forwards; }
+        @keyframes fadeInText { to { opacity: 1; } }
+        .instruction { position: absolute; bottom: 30px; font-size: 0.8rem; color: #ff7eb9; opacity: 0.6; }
     </style>
 </head>
 <body>
@@ -37,19 +48,24 @@
     </div>
 
     <div id="garden-container" class="hidden" onclick="createFlower(event)">
-        <h1>A garden for the prettiest girl... 🌸</h1>
-        <p class="instruction">Tap to plant flowers</p>
+        <h1 id="garden-head">Tap to build her a garden... 🌸</h1>
+        <p class="instruction" id="instr">Keep tapping!</p>
+        <div id="final-message" class="hidden">
+            <div class="heart-container">❤️</div>
+            <div class="love-text">I LOVE YOU BONDAM ❤️</div>
+        </div>
     </div>
 
     <script>
-        const questions = ["Do you love me? ❤️", "Am I your favorite? ✨", "Ready for your garden? 🌹"];
+        const questions = ["Do you love me? ❤️", "Am I your favorite? ✨", "Ready for your surprise? 🌹"];
         let currentQ = 0;
+        let flowerCount = 0;
         const noBtn = document.getElementById('noBtn');
         const yesBtn = document.getElementById('yesBtn');
 
         const moveNo = () => {
-            const x = Math.random() * (window.innerWidth - noBtn.offsetWidth);
-            const y = Math.random() * (window.innerHeight - noBtn.offsetHeight);
+            const x = Math.random() * (window.innerWidth - 100);
+            const y = Math.random() * (window.innerHeight - 50);
             noBtn.style.position = "fixed";
             noBtn.style.left = x + "px";
             noBtn.style.top = y + "px";
@@ -63,8 +79,7 @@
             if (currentQ < questions.length) {
                 document.getElementById('questionText').innerText = questions[currentQ];
                 noBtn.style.position = "absolute";
-                noBtn.style.left = "50%";
-                noBtn.style.transform = "translateX(20%)";
+                noBtn.style.left = "calc(50% + 10px)";
                 noBtn.style.top = "auto";
             } else {
                 document.getElementById('game-container').classList.add('hidden');
@@ -73,18 +88,23 @@
         };
 
         function createFlower(e) {
+            if (flowerCount >= 20) return; // Prevent infinite clutter
+            
             const flower = document.createElement('div');
             flower.className = 'flower';
-            const colors = ['#ff7eb9', '#ffb7ff', '#7afcff', '#feff9c', '#fff3ff'];
-            const icons = ['🌸', '🌺', '🌷', '✨', '🌼'];
-            const randomType = Math.floor(Math.random() * icons.length);
-            
-            flower.innerHTML = icons[randomType];
-            flower.style.color = colors[Math.floor(Math.random() * colors.length)];
-            flower.style.fontSize = (Math.random() * 25 + 25) + 'px';
+            const flowerIcons = ['🌸', '🌺', '🌷', '🌻', '🌼', '🌹'];
+            flower.innerHTML = flowerIcons[Math.floor(Math.random() * flowerIcons.length)];
+            flower.style.fontSize = (Math.random() * 20 + 30) + 'px';
             flower.style.left = e.clientX + 'px';
             flower.style.top = e.clientY + 'px';
             document.getElementById('garden-container').appendChild(flower);
+            
+            flowerCount++;
+            if (flowerCount === 10) {
+                document.getElementById('final-message').classList.remove('hidden');
+                document.getElementById('garden-head').style.opacity = "0";
+                document.getElementById('instr').style.opacity = "0";
+            }
         }
     </script>
 </body>
